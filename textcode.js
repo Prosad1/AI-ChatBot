@@ -1,3 +1,6 @@
+//This file contains various versions of code that we are messing with to get out ai to work
+
+
 //PAGE
 
 export default function Home() {
@@ -86,6 +89,109 @@ export async function POST(req) {
 
     const openai = new OpenAI();
     const data = await req.json();
+
+    const completion = await openai.chat.completions.create({
+        messages: [
+        {
+            role: 'system', 
+            content: systemPrompt,
+        },
+        ...data,
+    ],
+    model: 'gpt-4o-mini',
+    stream: true,
+    })
+
+    const stream = new ReadableStream({
+        async  start(controller){
+
+            const encoder = new TextEncoder()
+
+            try{
+                for await (const chunk of completion){
+                    const content = chunk.choices[0]?.delta?.content
+                    if (content){
+                        const text = encoder.encode(content)
+                        controller.enqueue(text)
+                    }
+                }
+            }
+
+            catch(err){
+                controller.error(err)
+            }
+            finally {
+                controller.close()
+            }
+        },
+
+    })
+
+    return new NextResponse(stream)
+}
+
+//chat gpt test
+
+import { NextResponse } from 'next/server';
+import OpenAI from 'openai';
+
+export async function POST(req) {
+    const openai = new OpenAI();
+
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'system', content: 'Say hello!' }],
+        });
+
+        console.log('OpenAI response:', response); // Log the entire response
+        return NextResponse.json(response); // Send the response back to the client
+    } catch (error) {
+        console.error('Error connecting to OpenAI:', error); // Log any connection errors
+        return NextResponse.json({ error: 'Failed to connect to OpenAI' });
+    }
+}
+
+//google gemini test
+import { NextResponse } from 'next/server';
+import { google } from 'googleapis';
+
+// Initialize Google Gemini API
+const gemini = google.gemini({
+    version: 'v1', // or the appropriate version
+    auth: process.env.GOOGLE_API_KEY,
+});
+
+export async function POST(req) {
+    const data = await req.json();
+
+    try {
+        const response = await gemini.chat.completions.create({
+            model: 'gpt-4', // Update this based on Google Gemini’s model names
+            messages: [
+                { role: 'system', content: 'Say hello!' },
+                ...data.messages,
+            ],
+        });
+
+        console.log('Google Gemini response:', response);
+        return NextResponse.json(response);
+    } catch (error) {
+        console.error('Error connecting to Google Gemini:', error);
+        return NextResponse.json({ error: 'Failed to connect to Google Gemini' });
+    }
+}
+
+//changing to gemini
+import { NextResponse } from 'next/server';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+export async function POST(req) {
+    const genAI = new GoogleGenerativeAI(process.env.API_KEY); 
+
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
+
+    const systemPrompt = "You are an AI-powered customer service assistant for HeadStarterAI, a company specializing in AI-driven interviews for software engineering (SWE) jobs. Your role is to assist users with inquiries related to our services, guide them through the platform, troubleshoot common issues, and provide detailed information about our interview preparation tools. You should be polite, professional, and helpful, ensuring that users have a smooth and positive experience. If you encounter a question or situation you cannot resolve, politely offer to connect the user with a human representative to assist further. Always aim to resolve queries efficiently, and provide clear, concise, and accurate information."
 
     const completion = await openai.chat.completions.create({
         messages: [

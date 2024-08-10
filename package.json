@@ -11,8 +11,11 @@
   "dependencies": {
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
+    "@google/generative-ai": "^0.16.0",
     "@mui/material": "^5.16.7",
+    "googleapis": "^140.0.1",
     "next": "14.2.5",
+    "node-fetch": "^3.3.2",
     "openai": "^4.55.4",
     "react": "^18",
     "react-dom": "^18"
